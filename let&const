@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+
+</body>
+<script>
+//    ES6
+//    1.Let
+
+
+/*ES6 新增了let命令，用来声明变量。它的用法类似于var，但是所声明的变量，只在let命令所在的代码块内有效。*/
+{
+    let a = 10;
+    var b = 1;
+}
+
+console.log(a);// ReferenceError: a is not defined.
+console.log(b) // 1
+
+
+    //不存在变量提升
+
+// var 的情况
+console.log(foo); // 输出undefined
+var foo = 2;
+
+// let 的情况
+console.log(bar); // 报错ReferenceError
+let bar = 2;
+
+/*暂时性死区
+只要块级作用域内存在let命令，它所声明的变量就“绑定”（binding）这个区域，不再受外部的影响。*/
+
+var tmp = 123;
+
+if (true) {
+    tmp = 'abc'; // ReferenceError
+    let tmp;
+}
+/*上面代码中，存在全局变量tmp，但是块级作用域内let又声明了一个局部变量tmp，导致后者绑定这个块级作用域，所以在let声明变量前，对tmp赋值会报错。
+
+ES6明确规定，如果区块中存在let和const命令，这个区块对这些命令声明的变量，从一开始就形成了封闭作用域。凡是在声明之前就使用这些变量，就会报错。
+
+总之，在代码块内，使用let命令声明变量之前，该变量都是不可用的。这在语法上，称为“暂时性死区”（temporal dead zone，简称 TDZ）。*/
+
+if (true) {
+    // TDZ开始
+    tmp = 'abc'; // ReferenceError
+    console.log(tmp); // ReferenceError
+
+    let tmp; // TDZ结束
+    console.log(tmp); // undefined
+
+    tmp = 123;
+    console.log(tmp); // 123
+}
+/*上面代码中，在let命令声明变量tmp之前，都属于变量tmp的“死区”。
+
+“暂时性死区”也意味着typeof不再是一个百分之百安全的操作。*/
+
+typeof x; // ReferenceError
+let x;
+/*上面代码中，变量x使用let命令声明，所以在声明之前，都属于x的“死区”，只要用到该变量就会报错。因此，typeof运行时就会抛出一个ReferenceError。
+
+作为比较，如果一个变量根本没有被声明，使用typeof反而不会报错。*/
+
+typeof undeclared_variable // "undefined"
+/*上面代码中，undeclared_variable是一个不存在的变量名，结果返回“undefined”。所以，在没有let之前，typeof运算符是百分之百安全的，永远不会报错。现在这一点不成立了。这样的设计是为了让大家养成良好的编程习惯，变量一定要在声明之后使用，否则就报错。*/
+
+/*有些“死区”比较隐蔽，不太容易发现。*/
+
+function bar(x = y, y = 2) {
+    return [x, y];
+}
+
+bar(); // 报错
+
+/*上面代码中，调用bar函数之所以报错（某些实现可能不报错），是因为参数x默认值等于另一个参数y，而此时y还没有声明，属于”死区“。如果y的默认值是x，就不会报错，因为此时x已经声明了。*/
+
+
+//块级作用域与函数声明
+
+function f() { console.log('I am outside!'); }
+
+(function () {
+    if (false) {
+        // 重复声明一次函数f
+        function f() { console.log('I am inside!'); }
+    }
+
+    f();
+}());
+/*上面代码在 ES5 中运行，会得到“I am inside!”，因为在if内声明的函数f会被提升到函数头部，实际运行的代码如下。*/
+
+// ES5 环境
+function f() { console.log('I am outside!'); }
+
+(function () {
+    function f() { console.log('I am inside!'); }
+    if (false) {
+    }
+    f();
+}());
+
+
+/*ES6 就完全不一样了，理论上会得到“I am outside!”。因为块级作用域内声明的函数类似于let，对作用域之外没有影响。但是，如果你真的在 ES6 浏览器中运行一下上面的代码，是会报错的，这是为什么呢？
+
+原来，如果改变了块级作用域内声明的函数的处理规则，显然会对老代码产生很大影响。为了减轻因此产生的不兼容问题，ES6在附录B里面规定，浏览器的实现可以不遵守上面的规定，有自己的行为方式。
+
+允许在块级作用域内声明函数。
+函数声明类似于var，即会提升到全局作用域或函数作用域的头部。
+同时，函数声明还会提升到所在的块级作用域的头部。
+注意，上面三条规则只对 ES6 的浏览器实现有效，其他环境的实现不用遵守，还是将块级作用域的函数声明当作let处理。
+
+根据这三条规则，在浏览器的 ES6 环境中，块级作用域内声明的函数，行为类似于var声明的变量。*/
+
+// 浏览器的 ES6 环境
+function f() { console.log('I am outside!'); }
+
+(function () {
+    if (false) {
+        // 重复声明一次函数f
+        function f() { console.log('I am inside!'); }
+    }
+
+    f();
+}());
+// Uncaught TypeError: f is not a function
+
+//上面的代码在符合 ES6 的浏览器中，都会报错，因为实际运行的是下面的代码。
+
+// 浏览器的 ES6 环境
+function f() { console.log('I am outside!'); }
+(function () {
+    var f = undefined;
+    if (false) {
+        function f() { console.log('I am inside!'); }
+    }
+
+    f();
+}());
+// Uncaught TypeError: f is not a function
+
+
+
+do 表达式
+本质上，块级作用域是一个语句，将多个操作封装在一起，没有返回值。
+
+{
+  let t = f();
+  t = t * t + 1;
+}
+上面代码中，块级作用域将两个语句封装在一起。但是，在块级作用域以外，没有办法得到t的值，因为块级作用域不返回值，除非t是全局变量。
+
+现在有一个提案，使得块级作用域可以变为表达式，也就是说可以返回值，办法就是在块级作用域之前加上do，使它变为do表达式，然后就会返回内部最后执行的表达式的值。
+
+let x = do {
+  let t = f();
+  t * t + 1;
+};
+上面代码中，变量x会得到整个块级作用域的返回值（t * t + 1）。
+</script>
+</html>
